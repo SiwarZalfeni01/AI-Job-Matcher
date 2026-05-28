@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "job_offers")
@@ -32,6 +34,10 @@ public class JobOffer {
     @JoinColumn(name = "recruiter_id", nullable = false)
     @JsonIgnoreProperties({"password", "cvs", "jobOffers", "createdAt", "updatedAt", "hibernateLazyInitializer"})
     private User recruiter;
+
+    @OneToMany(mappedBy = "jobOffer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("jobOffer")
+    private List<MatchResult> matchResults = new ArrayList<>();
 
     @Column(name = "company_name")
     private String companyName;
