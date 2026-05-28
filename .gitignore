@@ -1,0 +1,38 @@
+# Backend
+backend/ai-job-matcher-backend/target/
+backend/ai-job-matcher-backend/.classpath
+backend/ai-job-matcher-backend/.project
+backend/ai-job-matcher-backend/.settings/
+backend/ai-job-matcher-backend/*.log
+backend/ai-job-matcher-backend/.DS_Store
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# AI/NLP
+ai-nlp/__pycache__/
+ai-nlp/*.py[cod]
+ai-nlp/*$py.class
+ai-nlp/venv/
+ai-nlp/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local

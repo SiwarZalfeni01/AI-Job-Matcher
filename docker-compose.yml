@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ai-job-matcher-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ai_job_matcher
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  backend:
+    build:
+      context: ./backend/ai-job-matcher-backend
+      dockerfile: Dockerfile
+    container_name: ai-job-matcher-backend
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/ai_job_matcher?useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      AI_SERVICE_URL: http://ai-nlp:5000
+      SERVER_PORT: 8081
+    depends_on:
+      - mysql
+    networks:
+      - ai-job-matcher-network
+
+  ai-nlp:
+    build:
+      context: ./ai-nlp
+      dockerfile: Dockerfile
+    container_name: ai-job-matcher-ai-nlp
+    ports:
+      - "5000:5000"
+    networks:
+      - ai-job-matcher-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ai-job-matcher-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: http://localhost:8081/api
+    depends_on:
+      - backend
+    networks:
+      - ai-job-matcher-network
+
+volumes:
+  mysql_data:
+
+networks:
+  ai-job-matcher-network:
+    driver: bridge
