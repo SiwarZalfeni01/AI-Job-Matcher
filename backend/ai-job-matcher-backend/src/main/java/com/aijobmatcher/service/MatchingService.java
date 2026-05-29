@@ -100,7 +100,7 @@ public class MatchingService {
 
         try {
             // Get detailed match from AI service
-            Map<String, Object> aiResult = aiService.getMatchDetails(cv.getContent(), job.getDescription());
+            Map<String, Object> aiResult = aiService.getMatchDetails(cv.getExtractedSkills(), job.getRequiredSkills());
             
             matchResult.setUser(user);
             matchResult.setJobOffer(job);
@@ -111,7 +111,7 @@ public class MatchingService {
             return matchResultRepository.save(matchResult);
         } catch (Exception e) {
             // Fallback to simple calculation if AI service fails
-            double score = aiService.calculateMatch(cv.getContent(), job.getDescription());
+            Double score = aiService.calculateMatchScore(cv.getExtractedSkills(), job.getRequiredSkills());
             matchResult.setUser(user);
             matchResult.setJobOffer(job);
             matchResult.setScore(score);
