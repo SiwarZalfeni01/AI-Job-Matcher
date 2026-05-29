@@ -4,7 +4,7 @@ export default function Navbar({ user, onLogout, currentPage, onNavigate }) {
   return (
     <nav className="navbar">
       <div className="navbar-content">
-        <h1>🔥 AI Job Matcher</h1>
+        <h1>🔥 Khademni</h1>
         {user && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <ul className="navbar-links">

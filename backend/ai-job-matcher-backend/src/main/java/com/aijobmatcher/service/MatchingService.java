@@ -93,38 +93,42 @@ public class MatchingService {
         return matches;
     }
 
-    public MatchResult calculateMatch(User user, CV cv, JobOffer job) {
-        try {
-            Map<String, Object> matchDetails = aiService.getMatchDetails(
-                    cv.getExtractedSkills(),
-                    job.getRequiredSkills()
-            );
+    private MatchResult calculateMatch(User user, CV cv, JobOffer job) {
+        // Check if a match result already exists for this user and job
+        MatchResult matchResult = matchResultRepository.findByUserAndJobOffer(user, job)
+                .orElse(new MatchResult());
 
-            MatchResult matchResult = new MatchResult();
+        try {
+            // Get detailed match from AI service
+            Map<String, Object> aiResult = aiService.getMatchDetails(cv.getContent(), job.getDescription());
+            
             matchResult.setUser(user);
             matchResult.setJobOffer(job);
-            matchResult.setScore((Double) matchDetails.get("score"));
-            matchResult.setMatchedSkills((String) matchDetails.get("matched_skills"));
-            matchResult.setMissingSkills((String) matchDetails.get("missing_skills"));
-
+            matchResult.setScore((Double) aiResult.get("score"));
+            matchResult.setMatchedSkills((String) aiResult.get("matched_skills"));
+            matchResult.setMissingSkills((String) aiResult.get("missing_skills"));
+            
             return matchResultRepository.save(matchResult);
         } catch (Exception e) {
-            return null;
+            // Fallback to simple calculation if AI service fails
+            double score = aiService.calculateMatch(cv.getContent(), job.getDescription());
+            matchResult.setUser(user);
+            matchResult.setJobOffer(job);
+            matchResult.setScore(score);
+            matchResult.setMatchedSkills("[]");
+            matchResult.setMissingSkills("[]");
+            return matchResultRepository.save(matchResult);
         }
     }
 
     public List<MatchResultResponse> getTopMatches(Long userId, int limit) {
+        // Always trigger a refresh to ensure all jobs (including new ones) are matched
+        getMatchesForCandidate(userId);
+        
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<MatchResult> results = matchResultRepository.findByUserOrderByScoreDesc(user);
-
-        if (results.isEmpty()) {
-            // Trigger calculation if no results found
-            getMatchesForCandidate(userId);
-            // Re-fetch results after calculation
-            results = matchResultRepository.findByUserOrderByScoreDesc(user);
-        }
 
         List<MatchResultResponse> responses = new ArrayList<>();
         for (int i = 0; i < Math.min(limit, results.size()); i++) {

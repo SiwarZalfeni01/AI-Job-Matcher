@@ -15,4 +15,5 @@ public interface MatchResultRepository extends JpaRepository<MatchResult, Long> 
     List<MatchResult> findByJobOffer(JobOffer jobOffer);
     List<MatchResult> findByJobOfferOrderByScoreDesc(JobOffer jobOffer);
     List<MatchResult> findByJobOffer_RecruiterOrderByScoreDesc(User recruiter);
+    java.util.Optional<MatchResult> findByUserAndJobOffer(User user, JobOffer jobOffer);
 }
