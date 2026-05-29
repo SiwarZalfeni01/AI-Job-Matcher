@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { matchingService, cvService } from '../services/api'
 
 export default function CandidateDashboard({ user }) {
-  const [matches, setMatches] = useState([])
+  const [topMatches, setTopMatches] = useState([])
+  const [allMatchesCount, setAllMatchesCount] = useState(0)
   const [cvs, setCVs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -14,11 +15,13 @@ export default function CandidateDashboard({ user }) {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const [matchesRes, cvsRes] = await Promise.all([
+      const [topMatchesRes, allMatchesRes, cvsRes] = await Promise.all([
         matchingService.getTopMatches(user.id, 5),
+        matchingService.getMatches(user.id),
         cvService.getUserCVs(user.id)
       ])
-      setMatches(matchesRes.data)
+      setTopMatches(topMatchesRes.data)
+      setAllMatchesCount(allMatchesRes.data.length)
       setCVs(cvsRes.data)
     } catch (err) {
       setError('Failed to load dashboard data')
@@ -31,6 +34,25 @@ export default function CandidateDashboard({ user }) {
     if (score >= 80) return 'score-high'
     if (score >= 50) return 'score-medium'
     return 'score-low'
+  }
+
+  const renderSkills = (skillsJson, isMatched) => {
+    try {
+      const skills = skillsJson ? JSON.parse(skillsJson) : []
+      if (!Array.isArray(skills) || skills.length === 0) return <p style={{ color: '#999' }}>None</p>
+      
+      return (
+        <div className="skills-list">
+          {skills.map((skill, idx) => (
+            <span key={idx} className={`skill-tag ${isMatched ? 'matched' : 'missing'}`}>
+              {skill}
+            </span>
+          ))}
+        </div>
+      )
+    } catch (e) {
+      return <p style={{ color: '#999' }}>None</p>
+    }
   }
 
   if (loading) return <div className="loading">Loading dashboard...</div>
@@ -46,45 +68,40 @@ export default function CandidateDashboard({ user }) {
           <p>CVs Uploaded</p>
         </div>
         <div className="stat-card">
-          <h3>{matches.length}</h3>
-          <p>Top Matches</p>
+          <h3>{allMatchesCount}</h3>
+          <p>Total Job Matches</p>
         </div>
         <div className="stat-card">
-          <h3>{matches.length > 0 ? Math.round(matches[0].score) : 0}%</h3>
+          <h3>{topMatches.length > 0 ? Math.round(topMatches[0].score) : 0}%</h3>
           <p>Best Match Score</p>
         </div>
       </div>
 
       <div className="card">
-        <h3>Top Job Matches</h3>
-        {matches.length === 0 ? (
+        <h3>Top 5 Recommendations</h3>
+        {topMatches.length === 0 ? (
           <p>No matches yet. Upload your CV to get started!</p>
         ) : (
-          matches.map((match) => (
+          topMatches.map((match) => (
             <div key={match.id} className="job-card card" style={{ marginBottom: '15px' }}>
-              <h4>{match.jobTitle}</h4>
-              <p><strong>Company:</strong> {match.companyName}</p>
-              <p>
-                <strong>Match Score:</strong>{' '}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                <div>
+                  <h4>{match.jobTitle}</h4>
+                  <p><strong>Company:</strong> {match.companyName}</p>
+                </div>
                 <span className={`score-badge ${getScoreBadgeClass(match.score)}`}>
-                  {Math.round(match.score)}%
+                  {Math.round(match.score)}% Match
                 </span>
-              </p>
-              <div>
-                <strong>Matched Skills:</strong>
-                <div className="skills-list">
-                  {match.matchedSkills && JSON.parse(match.matchedSkills).map((skill, idx) => (
-                    <span key={idx} className="skill-tag matched">{skill}</span>
-                  ))}
-                </div>
               </div>
-              <div>
+              
+              <div style={{ marginTop: '10px' }}>
+                <strong>Matched Skills:</strong>
+                {renderSkills(match.matchedSkills, true)}
+              </div>
+              
+              <div style={{ marginTop: '10px' }}>
                 <strong>Missing Skills:</strong>
-                <div className="skills-list">
-                  {match.missingSkills && JSON.parse(match.missingSkills).map((skill, idx) => (
-                    <span key={idx} className="skill-tag missing">{skill}</span>
-                  ))}
-                </div>
+                {renderSkills(match.missingSkills, false)}
               </div>
             </div>
           ))
