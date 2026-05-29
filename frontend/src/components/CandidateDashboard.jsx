@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import { matchingService, cvService } from '../services/api'
+import { matchingService, cvService, jobService, applicationService } from '../services/api'
+import JobDetailsModal from './JobDetailsModal'
 
 export default function CandidateDashboard({ user }) {
   const [topMatches, setTopMatches] = useState([])
   const [allMatchesCount, setAllMatchesCount] = useState(0)
   const [cvs, setCVs] = useState([])
+  const [applications, setApplications] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedJob, setSelectedJob] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -15,9 +19,10 @@ export default function CandidateDashboard({ user }) {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const [allMatchesRes, cvsRes] = await Promise.all([
+      const [allMatchesRes, cvsRes, appsRes] = await Promise.all([
         matchingService.getMatches(user.id),
-        cvService.getUserCVs(user.id)
+        cvService.getUserCVs(user.id),
+        applicationService.getCandidateApplications(user.id)
       ])
       
       const allMatches = allMatchesRes.data
@@ -25,11 +30,45 @@ export default function CandidateDashboard({ user }) {
       // On prend exactement les 5 premiers de la liste "Matches"
       setTopMatches(allMatches.slice(0, 5))
       setCVs(cvsRes.data)
+      setApplications(appsRes.data)
     } catch (err) {
       setError('Failed to load dashboard data')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleApply = async (jobId) => {
+    try {
+      await applicationService.apply(user.id, jobId)
+      alert('Application submitted successfully!')
+      fetchData() // Refresh data
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to apply')
+    }
+  }
+
+  const handleViewDetails = async (match) => {
+    try {
+      const response = await jobService.getJobOffer(match.jobId)
+      const fullJobData = {
+        ...response.data,
+        ...match
+      }
+      setSelectedJob(fullJobData)
+      setIsModalOpen(true)
+    } catch (err) {
+      alert('Failed to load job details')
+    }
+  }
+
+  const isApplied = (jobId) => {
+    return applications.some(app => app.jobId === jobId)
+  }
+
+  const getApplicationStatus = (jobId) => {
+    const app = applications.find(app => app.jobId === jobId)
+    return app ? app.status : null
   }
 
   const getScoreBadgeClass = (score) => {
@@ -70,12 +109,12 @@ export default function CandidateDashboard({ user }) {
           <p>CVs Uploaded</p>
         </div>
         <div className="stat-card">
-          <h3>{allMatchesCount}</h3>
-          <p>Total Job Matches</p>
+          <h3>{applications.length}</h3>
+          <p>Jobs Applied</p>
         </div>
         <div className="stat-card">
-          <h3>{topMatches.length > 0 ? Math.round(topMatches[0].score) : 0}%</h3>
-          <p>Best Match Score</p>
+          <h3>{allMatchesCount}</h3>
+          <p>Matches Found</p>
         </div>
       </div>
 
@@ -102,13 +141,33 @@ export default function CandidateDashboard({ user }) {
               </div>
               
               <div style={{ marginTop: '10px' }}>
-                <strong>Missing Skills:</strong>
-                {renderSkills(match.missingSkills, false)}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  )
-}
+                 <strong>Missing Skills:</strong>
+                 {renderSkills(match.missingSkills, false)}
+               </div>
+
+               <div style={{ marginTop: '15px', textAlign: 'right' }}>
+                 <button 
+                   className="btn" 
+                   style={{ backgroundColor: '#f5f5f5' }}
+                   onClick={() => handleViewDetails(match)}
+                 >
+                   View Full Details
+                 </button>
+               </div>
+             </div>
+           ))
+         )}
+       </div>
+
+       {isModalOpen && selectedJob && (
+         <JobDetailsModal 
+           job={selectedJob} 
+           onClose={() => setIsModalOpen(false)}
+           onApply={handleApply}
+           isApplied={isApplied(selectedJob.jobId)}
+           applicationStatus={getApplicationStatus(selectedJob.jobId)}
+         />
+       )}
+     </div>
+   )
+ }

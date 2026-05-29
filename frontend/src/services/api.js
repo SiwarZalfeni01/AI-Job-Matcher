@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://localhost:8081/api'
+const API_BASE_URL = 'http://localhost:8085/api'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -63,6 +63,14 @@ export const matchingService = {
   getTopMatches: (userId, limit = 10) => api.get(`/matching/top-matches/${userId}`, { params: { limit } }),
   getJobCandidates: (jobId) => api.get(`/matching/job-candidates/${jobId}`),
   getRecruiterCandidates: (recruiterId) => api.get(`/matching/recruiter-candidates/${recruiterId}`)
+}
+
+// Application Service
+export const applicationService = {
+  apply: (userId, jobId) => api.post(`/applications/apply/${userId}/${jobId}`),
+  getCandidateApplications: (userId) => api.get(`/applications/candidate/${userId}`),
+  getRecruiterApplications: (recruiterId) => api.get(`/applications/recruiter/${recruiterId}`),
+  updateStatus: (applicationId, status) => api.patch(`/applications/${applicationId}/status`, null, { params: { status } })
 }
 
 export default api
