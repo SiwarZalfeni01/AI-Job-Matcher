@@ -15,13 +15,15 @@ export default function CandidateDashboard({ user }) {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const [topMatchesRes, allMatchesRes, cvsRes] = await Promise.all([
-        matchingService.getTopMatches(user.id, 5),
+      const [allMatchesRes, cvsRes] = await Promise.all([
         matchingService.getMatches(user.id),
         cvService.getUserCVs(user.id)
       ])
-      setTopMatches(topMatchesRes.data)
-      setAllMatchesCount(allMatchesRes.data.length)
+      
+      const allMatches = allMatchesRes.data
+      setAllMatchesCount(allMatches.length)
+      // On prend exactement les 5 premiers de la liste "Matches"
+      setTopMatches(allMatches.slice(0, 5))
       setCVs(cvsRes.data)
     } catch (err) {
       setError('Failed to load dashboard data')
